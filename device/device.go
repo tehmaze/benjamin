@@ -1,10 +1,15 @@
 package device
 
 import (
+	"errors"
 	"fmt"
-	"image"
 
 	"github.com/karalabe/hid"
+)
+
+// Errors
+var (
+	ErrNotFound = errors.New("benjamin: no supported devices found")
 )
 
 // Device hardware.
@@ -27,35 +32,10 @@ type Device interface {
 	// SerialNumber of the device.
 	SerialNumber() string
 
-	// Dim is the number of key columns and rows.
-	Dim() image.Point
-
-	// Key returns the Key at index. Returns nil if the key doesn't exist.
-	Key(int) Key
-
-	// Keys is the number of keys on the device.
-	Keys() int
-
-	// KeySize of the key in pixels.
-	KeySize() image.Point
-
 	// Events returns a channel that contains all Key events.
 	Events() <-chan Event
-}
 
-// Key on a device.
-type Key interface {
-	// Device the key is connected to.
-	Device() Device
-
-	// Position opn the Device.
-	Position() image.Point
-
-	// Size of the key in pixels.
-	Size() image.Point
-
-	// Update the key graphics.
-	Update(image.Image) error
+	Surface
 }
 
 // Driver returns a new Device.
@@ -115,4 +95,18 @@ func Discover() []Device {
 	}
 
 	return devices
+}
+
+// Open the first available discovered device.
+func Open() (Device, error) {
+	devices := Discover()
+	if len(devices) == 0 {
+		return nil, ErrNotFound
+	}
+
+	device := devices[0]
+	if err := device.Open(); err != nil {
+		return device, err
+	}
+	return device, nil
 }

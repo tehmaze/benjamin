@@ -24,6 +24,10 @@ func newKey(d *StreamDeck, x, y int) *key {
 	}
 }
 
+func (b key) Surface() device.Surface {
+	return b.device
+}
+
 func (b key) Device() device.Device {
 	return b.device
 }
@@ -39,10 +43,13 @@ func (b key) Size() image.Point {
 func (b key) Update(i image.Image) error {
 	r := i.Bounds()
 	if r.Dx() != b.device.pixels || r.Dy() != b.device.pixels {
-		// Resize with Lanczos resampling.
-		o := image.NewRGBA(image.Rectangle{Max: b.Size()})
-		draw.BiLinear.Scale(o, o.Bounds(), i, i.Bounds(), draw.Src, nil)
-		i = o
+		if _, is := i.(*image.Uniform); !is {
+			// Resize with Lanczos resampling.
+			//log.Printf("streamdeck: resize %s image to %dx%d", r, b.device.pixels, b.device.pixels)
+			o := image.NewRGBA(image.Rectangle{Max: b.Size()})
+			draw.BiLinear.Scale(o, o.Bounds(), i, i.Bounds(), draw.Src, nil)
+			i = o
+		}
 	}
 
 	p, err := b.device.toImageFormat(i)
@@ -59,6 +66,11 @@ func (b key) Update(i image.Image) error {
 		last   bool
 		header []byte
 	)
+
+	// NB: We need to execute this in locked context, to prevent concurrent writes!
+	b.device.mu.Lock()
+	defer b.device.mu.Unlock()
+
 	for page := 0; !last; page++ {
 		var p []byte
 		p, last = imageData.Page(page)
@@ -68,8 +80,9 @@ func (b key) Update(i image.Image) error {
 		copy(data[len(header):], p)
 
 		if _, err = b.device.dev.Write(data); err != nil {
-			return fmt.Errorf("moondeck: image transfer to button %d failed: %w", b.index, err)
+			return fmt.Errorf(logPrefix+": image transfer to button %d failed: %w", b.index, err)
 		}
 	}
+
 	return nil
 }

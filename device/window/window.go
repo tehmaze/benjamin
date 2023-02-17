@@ -54,10 +54,12 @@ func (d *Window) Reset() error {
 	return nil
 }
 
-func (Window) Dim() image.Point     { return image.Pt(dimX, dimY) }
-func (Window) Key(int) device.Key   { return nil }
-func (Window) Keys() int            { return dimX * dimY }
-func (Window) KeySize() image.Point { return image.Pt(keySize, keySize) }
+func (Window) Dim() image.Point           { return image.Pt(dimX, dimY) }
+func (Window) Key(image.Point) device.Key { return nil }
+func (Window) Keys() int                  { return dimX * dimY }
+func (Window) KeySize() image.Point       { return image.Pt(keySize, keySize) }
+func (Window) Margin() image.Point        { return image.Pt(0, 0) }
+func (Window) SetBrightness(uint8) error  { return nil }
 
 func (d *Window) Events() <-chan device.Event {
 	e := make(chan device.Event, 8)

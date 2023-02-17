@@ -3,6 +3,7 @@ package streamdeck
 import (
 	"fmt"
 	"image"
+	"sync"
 	"time"
 
 	"github.com/karalabe/hid"
@@ -13,6 +14,7 @@ import (
 
 const (
 	elgatoVendorID = 0x0fd9
+	logPrefix      = "benjamin.device.streamdeck"
 )
 
 type deviceType struct {
@@ -21,6 +23,7 @@ type deviceType struct {
 	cols, rows           int
 	keys                 int
 	pixels               int
+	margin               int
 	dpi                  int
 	padding              int
 	featureReportSize    int
@@ -44,6 +47,7 @@ func (t deviceType) Driver() device.USBDriver {
 
 type StreamDeck struct {
 	deviceType
+	mu         sync.Mutex
 	dev        *hid.Device
 	info       hid.DeviceInfo
 	key        []*key
@@ -79,7 +83,8 @@ func (d *StreamDeck) Dim() image.Point {
 	return image.Pt(d.cols, d.rows)
 }
 
-func (d *StreamDeck) Key(i int) device.Key {
+func (d *StreamDeck) Key(p image.Point) device.Key {
+	i := p.Y*d.cols + p.X
 	if i < 0 || i >= len(d.key) {
 		return nil
 	}
@@ -87,7 +92,11 @@ func (d *StreamDeck) Key(i int) device.Key {
 }
 
 func (d *StreamDeck) KeySize() image.Point {
-	return image.Pt(d.pixels, d.pixels)
+	return image.Point{X: d.pixels, Y: d.pixels}
+}
+
+func (d *StreamDeck) Margin() image.Point {
+	return image.Point{X: d.margin, Y: d.margin}
 }
 
 func (d *StreamDeck) Open() (err error) {
@@ -231,6 +240,7 @@ func (d *StreamDeck) Events() <-chan device.Event {
 			}
 		}
 	}(c)
+
 	return c
 }
 
@@ -241,42 +251,13 @@ func (d *StreamDeck) SetBrightness(v uint8) error {
 	return d.sendFeatureReport(append(d.commandSetBrightness, v))
 }
 
-/*
-func (d *StreamDeck) SetColor(c color.Color) error {
-	i := image.NewUniform(c)
-	for _, b := range d.button {
-		if err := b.SetImage(i); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (d *StreamDeck) SetImage(i image.Image) error {
-	var (
-		r = i.Bounds()
-		w = r.Dx() / d.cols
-		h = r.Dy() / d.rows
-		o = image.NewRGBA(image.Rect(0, 0, w, h))
-		b int
-	)
-	for y := 0; y < d.rows; y++ {
-		for x := 0; x < d.cols; x++ {
-			draw.Draw(o, o.Bounds(), i, image.Pt(x*w, y*h), draw.Src)
-			if err := d.key[b].SetImage(o); err != nil {
-				return err
-			}
-			b++
-		}
-	}
-	return nil
-}
-*/
-
 func (d *StreamDeck) getFeatureReport(p []byte) ([]byte, error) {
 	b := make([]byte, d.featureReportSize)
 	copy(b, p)
-	if _, err := d.dev.GetFeatureReport(b); err != nil {
+	d.mu.Lock()
+	_, err := d.dev.GetFeatureReport(b)
+	d.mu.Unlock()
+	if err != nil {
 		return nil, err
 	}
 	return b, nil
@@ -285,7 +266,9 @@ func (d *StreamDeck) getFeatureReport(p []byte) ([]byte, error) {
 func (d *StreamDeck) sendFeatureReport(p []byte) error {
 	b := make([]byte, d.featureReportSize)
 	copy(b, p)
+	d.mu.Lock()
 	_, err := d.dev.SendFeatureReport(b)
+	d.mu.Unlock()
 	return err
 }
 
@@ -339,7 +322,8 @@ func init() {
 		cols:                 5,
 		rows:                 3,
 		keys:                 15,
-		pixels:               72,
+		pixels:               72, //
+		margin:               24, // 0.75"
 		dpi:                  124,
 		padding:              16,
 		featureReportSize:    17,

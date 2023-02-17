@@ -20,7 +20,7 @@ func init() {
 		imagePageSize:        1024,
 		imagePageHeaderSize:  8,
 		imagePageHeader:      streamDeckRev2PageHeader,
-		toImageFormat:        toJPEG,
+		toImageFormat:        toJPEG(72),
 		commandFirmware:      streamDeckRev2Firmware,
 		commandReset:         streamDeckRev2Reset,
 		commandSetBrightness: streamDeckRev2SetBrightness,

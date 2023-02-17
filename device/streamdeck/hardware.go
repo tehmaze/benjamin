@@ -92,28 +92,30 @@ func toBMP(i image.Image) ([]byte, error) {
 	return b, nil
 }
 
-func toJPEG(i image.Image) ([]byte, error) {
-	// flip image horizontally and vertically
-	var (
-		f  = image.NewRGBA(i.Bounds())
-		r  = i.Bounds()
-		dx = r.Dx()
-		dy = r.Dy()
-	)
-	draw.Copy(f, image.Point{}, i, r, draw.Src, nil)
-	for y := 0; y < dy/2; y++ {
-		yy := r.Max.Y - y - 1
-		for x := 0; x < dx; x++ {
-			xx := r.Max.X - x - 1
-			c := f.RGBAAt(x, y)
-			f.SetRGBA(x, y, f.RGBAAt(xx, yy))
-			f.SetRGBA(xx, yy, c)
+func toJPEG(pixels int) func(image.Image) ([]byte, error) {
+	r := image.Rect(0, 0, pixels, pixels)
+	return func(i image.Image) ([]byte, error) {
+		// flip image horizontally and vertically
+		var (
+			f  = image.NewRGBA(r)
+			dx = r.Dx()
+			dy = r.Dy()
+		)
+		draw.Copy(f, image.Point{}, i, r, draw.Src, nil)
+		for y := 0; y < dy/2; y++ {
+			yy := r.Max.Y - y - 1
+			for x := 0; x < dx; x++ {
+				xx := r.Max.X - x - 1
+				c := f.RGBAAt(x, y)
+				f.SetRGBA(x, y, f.RGBAAt(xx, yy))
+				f.SetRGBA(xx, yy, c)
+			}
 		}
-	}
 
-	var b bytes.Buffer
-	if err := jpeg.Encode(&b, f, &jpeg.Options{Quality: 100}); err != nil {
-		return nil, err
+		var b bytes.Buffer
+		if err := jpeg.Encode(&b, f, &jpeg.Options{Quality: 100}); err != nil {
+			return nil, err
+		}
+		return b.Bytes(), nil
 	}
-	return b.Bytes(), nil
 }
