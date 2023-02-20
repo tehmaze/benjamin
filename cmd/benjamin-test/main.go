@@ -1,68 +1,112 @@
 package main
 
 import (
+	"embed"
 	"flag"
-	"fmt"
-	"strings"
+	"image"
+	"image/png"
+	"log"
 
-	"github.com/tehmaze/benjamin/device"
+	"github.com/tehmaze/benjamin"
+	"github.com/tehmaze/benjamin/deck"
+	"github.com/tehmaze/benjamin/widget"
 
-	_ "github.com/tehmaze/benjamin/device/streamdeck"
-	_ "github.com/tehmaze/benjamin/device/window"
+	_ "github.com/tehmaze/benjamin/deck/all" // All hardware drivers
 )
 
 func main() {
-	deviceManufacturer := flag.String("manufacturer", "", "filter device by manufacturer")
-	deviceProduct := flag.String("product", "", "filter device by product")
-	deviceSerial := flag.String("serial", "", "filter device by serial number")
+	serial := flag.String("serial", "", "use device with this serial number")
+	fps := flag.Int("fps", 20, "maximum frame rate")
 	flag.Parse()
 
-	var deviceFilter []func(d device.Device) bool
-
-	if *deviceManufacturer != "" {
-		deviceFilter = append(deviceFilter, func(d device.Device) bool {
-			return strings.EqualFold(d.Manufacturer(), *deviceManufacturer)
-		})
-	}
-	if *deviceProduct != "" {
-		deviceFilter = append(deviceFilter, func(d device.Device) bool {
-			return strings.EqualFold(d.Product(), *deviceProduct)
-		})
-	}
-	if *deviceSerial != "" {
-		deviceFilter = append(deviceFilter, func(d device.Device) bool {
-			return strings.EqualFold(d.SerialNumber(), *deviceSerial)
-		})
+	d, err := newDeck(*serial)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	var devices []device.Device
-discovering:
-	for _, device := range device.Discover() {
-		for _, filter := range deviceFilter {
-			if !filter(device) {
-				continue discovering
+	defer d.Close()
+	if err = d.Reset(); err != nil {
+		log.Fatal(err)
+	}
+
+	if err = d.SetBrightness(1); err != nil {
+		log.Fatal(err)
+	}
+
+	p := benjamin.NewPanel(d, 1, *fps)
+	addKeys(p)
+
+	for event := range d.Events() {
+		log.Println(event)
+		switch event.Type {
+		case deck.EventTypeKeyPressed:
+			j := event.Data.(deck.KeyPress).Position()
+			l := p.Layers[0]
+			if w := l.Widget(j.X, j.Y); w != nil {
+				w.(*widget.TileWidget).SetImage(starStruck)
 			}
+		case deck.EventTypeKeyReleased:
+			j := event.Data.(deck.KeyRelease).Position()
+			l := p.Layers[0]
+			if w := l.Widget(j.X, j.Y); w != nil {
+				w.(*widget.TileWidget).SetImage(relievedFace)
+			}
+		case deck.EventTypeEncoderPressed:
+		case deck.EventTypeEncoderReleased:
 		}
-		devices = append(devices, device)
-	}
-
-	var dev device.Device
-	switch l := len(devices); l {
-	case 0:
-		fmt.Println("no compatible devices found")
-		return
-	case 1:
-		dev = devices[0]
-		fmt.Println("using", dev.Manufacturer(), dev.Product(), "with serial", dev.SerialNumber())
-	default:
-		fmt.Println(l, "devices found, pick one using flags")
-		return
-	}
-
-	if err := dev.Open(); err != nil {
-		fmt.Println("error:", err)
-		return
 	}
 }
 
-func filterAny(_ device.Device) bool { return true }
+func newDeck(serial string) (d deck.Deck, err error) {
+	if serial == "" {
+		return deck.Open()
+	}
+
+	for _, d = range deck.Discover() {
+		if d.SerialNumber() == serial {
+			return d, d.Open()
+		}
+	}
+
+	return nil, deck.ErrNotFound
+}
+
+func addKeys(p *benjamin.Panel) {
+	dim := p.Dim()
+	for y := 0; y < dim.Y; y++ {
+		for x := 0; x < dim.X; x++ {
+			r := image.Rectangle{Min: image.Pt(x, y)}
+			r.Max = r.Min.Add(image.Pt(1, 1))
+			w := widget.Tile(relievedFace)
+			w.Rect = r
+			p.Layers[0].AddWidget(w)
+		}
+	}
+
+	for i, l := 0, p.Encoders(); i < l; i++ {
+		//e := p.Encoder(i)
+		d := p.Display(i)
+		d.Update(starStruck)
+	}
+}
+
+//go:embed *.png
+var content embed.FS
+
+var (
+	starStruck   = mustImage("star-struck.png")
+	relievedFace = mustImage("relieved-face.png")
+	gopher       = mustImage("gopher.png")
+)
+
+func mustImage(name string) image.Image {
+	f, err := content.Open(name)
+	if err != nil {
+		panic(err)
+	}
+	i, err := png.Decode(f)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}

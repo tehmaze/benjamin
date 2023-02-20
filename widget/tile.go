@@ -3,7 +3,7 @@ package widget
 import (
 	"image"
 
-	"github.com/tehmaze/benjamin/device"
+	"github.com/tehmaze/benjamin/deck"
 )
 
 // TileWidget is a single button image, it can be used across multiple keys in which
@@ -22,7 +22,7 @@ func Tile(i image.Image) *TileWidget {
 
 func (TileWidget) Dim() image.Point { return image.Pt(1, 1) }
 
-func (w *TileWidget) ImageFor(key device.Key) image.Image {
+func (w *TileWidget) ImageFor(key deck.Key) image.Image {
 	if key.Position().In(w.Bounds()) {
 		w.IsClean = true
 		return w.Texture

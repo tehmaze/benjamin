@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/tehmaze/benjamin"
-	"github.com/tehmaze/benjamin/device/dummy"
+	"github.com/tehmaze/benjamin/deck/dummy"
 )
 
 func TestNewLayers(t *testing.T) {

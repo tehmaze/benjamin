@@ -5,7 +5,7 @@ import (
 	"image/color"
 
 	"github.com/tehmaze/benjamin"
-	"github.com/tehmaze/benjamin/device"
+	"github.com/tehmaze/benjamin/deck"
 )
 
 // Solid color widget.
@@ -21,7 +21,7 @@ func Color(c color.Color) *ColorWidget {
 	}
 }
 
-func (w *ColorWidget) ImageFor(k device.Key) image.Image {
+func (w *ColorWidget) ImageFor(k deck.Key) image.Image {
 	w.IsClean = true
 	return solidColorImage{w.Color}
 }

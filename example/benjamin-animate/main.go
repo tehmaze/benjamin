@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/tehmaze/benjamin"
-	"github.com/tehmaze/benjamin/device"
-	_ "github.com/tehmaze/benjamin/device/streamdeck" // Stream Deck support
+	"github.com/tehmaze/benjamin/deck"
+	_ "github.com/tehmaze/benjamin/deck/streamdeck" // Stream Deck support
 	"golang.org/x/image/draw"
 )
 
@@ -40,7 +40,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	go func(d device.Device, g *gif.GIF) {
+	go func(d deck.Deck, g *gif.GIF) {
 		var (
 			keySize = d.KeySize()
 			dim     = d.Dim()

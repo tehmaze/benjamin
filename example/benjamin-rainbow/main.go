@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/tehmaze/benjamin"
-	"github.com/tehmaze/benjamin/device"
-	_ "github.com/tehmaze/benjamin/device/streamdeck" // Stream Deck support
+	"github.com/tehmaze/benjamin/deck"
+	_ "github.com/tehmaze/benjamin/deck/all" // Stream Deck support
 	"github.com/tehmaze/benjamin/widget"
 )
 
 func main() {
-	d, err := device.Open()
+	d, err := deck.Open()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -54,9 +54,13 @@ func main() {
 	log.Println("press (0,0) to quit")
 	for ev := range d.Events() {
 		log.Println(ev)
-		if ev.Type == device.KeyPressed && ev.Pos.X == 0 && ev.Pos.Y == 0 {
-			log.Println("bye!")
-			return
+		switch ev.Type {
+		case deck.EventTypeKeyPressed:
+			d := ev.Data.(deck.KeyPress)
+			if d.Position().X == 0 && d.Position().Y == 0 {
+				log.Println("bye!")
+				return
+			}
 		}
 	}
 }

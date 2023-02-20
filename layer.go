@@ -4,16 +4,16 @@ import (
 	"image"
 	"sync"
 
-	"github.com/tehmaze/benjamin/device"
+	"github.com/tehmaze/benjamin/deck"
 )
 
 type Layer struct {
-	Device  device.Device
+	Device  deck.Deck
 	Widgets []Widget
 	mu      sync.RWMutex
 }
 
-func NewLayer(device device.Device) *Layer {
+func NewLayer(device deck.Deck) *Layer {
 	return &Layer{
 		Device: device,
 	}
@@ -59,7 +59,7 @@ func (l *Layer) UpdateRequired() bool {
 	return false
 }
 
-func (l *Layer) Refresh(s device.Surface, force bool) error {
+func (l *Layer) Refresh(s deck.Surface, force bool) error {
 	seen := make(map[Widget]bool)
 	for _, w := range l.Widgets {
 		if seen[w] {
@@ -100,7 +100,7 @@ func (ls Layers) UpdateRequired() bool {
 	return false
 }
 
-func (ls Layers) Refresh(s device.Surface, force bool) error {
+func (ls Layers) Refresh(s deck.Surface, force bool) error {
 	for _, l := range ls {
 		if err := l.Refresh(s, force); err != nil {
 			return err

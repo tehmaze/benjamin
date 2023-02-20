@@ -3,7 +3,7 @@ package benjamin
 import (
 	"image"
 
-	"github.com/tehmaze/benjamin/device"
+	"github.com/tehmaze/benjamin/deck"
 )
 
 const fontDPI = 72
@@ -16,10 +16,10 @@ type Widget interface {
 	Move(image.Point)
 
 	// Handle an Event on the Widget.
-	Handle(device.Event)
+	Handle(deck.Event)
 
 	// ImageFor returns the Widget image, can return nil if it doesn't have an image.
-	ImageFor(device.Key) image.Image
+	ImageFor(deck.Key) image.Image
 
 	// Render the Widget on the surface.
 	//Render(device.Surface) error

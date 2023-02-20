@@ -6,8 +6,8 @@ import (
 	"log"
 
 	"github.com/tehmaze/benjamin"
-	"github.com/tehmaze/benjamin/device"
-	_ "github.com/tehmaze/benjamin/device/streamdeck" // Stream Deck support
+	"github.com/tehmaze/benjamin/deck"
+	_ "github.com/tehmaze/benjamin/deck/streamdeck" // Stream Deck support
 	"github.com/tehmaze/benjamin/widget"
 )
 

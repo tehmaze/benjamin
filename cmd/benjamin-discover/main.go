@@ -3,14 +3,12 @@ package main
 import (
 	"fmt"
 
-	"github.com/tehmaze/benjamin/device"
-
-	_ "github.com/tehmaze/benjamin/device/streamdeck"
-	_ "github.com/tehmaze/benjamin/device/window"
+	"github.com/tehmaze/benjamin/deck"
+	_ "github.com/tehmaze/benjamin/deck/all" // All hardware drivers
 )
 
 func main() {
-	devices := device.Discover()
+	devices := deck.Discover()
 	if len(devices) == 0 {
 		fmt.Println("no compatible devices found")
 		return

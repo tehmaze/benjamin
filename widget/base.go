@@ -4,14 +4,14 @@ import (
 	"image"
 	"time"
 
-	"github.com/tehmaze/benjamin/device"
+	"github.com/tehmaze/benjamin/deck"
 )
 
 // Base widget, does nothing.
 type Base struct {
 	Rect         image.Rectangle
-	OnKeyPress   func(device.Device)
-	OnKeyRelease func(device.Device, time.Duration)
+	OnKeyPress   func(deck.Key)
+	OnKeyRelease func(deck.Key, time.Duration)
 	IsClean      bool
 	IsHidden     bool
 }
@@ -35,20 +35,20 @@ func (w *Base) Move(p image.Point) {
 	)
 }
 
-func (w *Base) Handle(event device.Event) {
-	switch event.Type {
-	case device.KeyPressed:
+func (w *Base) Handle(event deck.Event) {
+	switch event := event.Data.(type) {
+	case deck.KeyPress:
 		if w.OnKeyPress != nil {
-			w.OnKeyPress(event.Device)
+			w.OnKeyPress(event.Key)
 		}
-	case device.KeyReleased:
+	case deck.KeyRelease:
 		if w.OnKeyRelease != nil {
-			w.OnKeyRelease(event.Device, event.Duration)
+			w.OnKeyRelease(event.Key, event.Duration)
 		}
 	}
 }
 
-func (w *Base) ImageFor(_ device.Key) image.Image {
+func (w *Base) ImageFor(_ deck.Key) image.Image {
 	w.IsClean = true
 	return nil
 }
@@ -56,5 +56,13 @@ func (w *Base) ImageFor(_ device.Key) image.Image {
 func (w *Base) UpdateRequired() bool { return !w.IsClean }
 func (w *Base) IsVisible() bool      { return !w.IsHidden }
 func (w *Base) Dirty()               { w.IsClean = false }
-func (w *Base) Hide()                { w.IsHidden = true }
-func (w *Base) Show()                { w.IsHidden = false }
+
+func (w *Base) Hide() {
+	w.IsHidden = true
+	w.IsClean = false
+}
+
+func (w *Base) Show() {
+	w.IsHidden = false
+	w.IsClean = false
+}

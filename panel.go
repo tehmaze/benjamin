@@ -5,27 +5,27 @@ import (
 	"log"
 	"time"
 
-	"github.com/tehmaze/benjamin/device"
+	"github.com/tehmaze/benjamin/deck"
 )
 
 const DefaultMaxFPS = 60
 
 // Panel can have multiple layers and refreshes at a fixed frame rate.
 type Panel struct {
-	device.Device
+	deck.Deck
 	Background image.Image
 	Layers     Layers
 	stop       chan struct{}
 }
 
-func NewPanel(device device.Device, layers, maxFPS int) *Panel {
+func NewPanel(deck deck.Deck, layers, maxFPS int) *Panel {
 	p := &Panel{
-		Device: device,
+		Deck:   deck,
 		Layers: make(Layers, layers),
 		stop:   make(chan struct{}, 1),
 	}
 	for i := 0; i < layers; i++ {
-		p.Layers[i] = NewLayer(device)
+		p.Layers[i] = NewLayer(deck)
 	}
 	go p.update(maxFPS)
 	return p
@@ -62,7 +62,7 @@ func (p *Panel) update(maxFPS int) {
 func (p *Panel) Refresh(force bool) error {
 	if force || p.Layers.UpdateRequired() {
 		if p.Background != nil {
-			return p.Layers.Refresh(&device.BackgroundSurface{
+			return p.Layers.Refresh(&deck.BackgroundSurface{
 				Surface:    p,
 				Background: p.Background,
 			}, force)

@@ -11,7 +11,7 @@ import (
 	"golang.org/x/image/math/fixed"
 
 	"github.com/tehmaze/benjamin"
-	"github.com/tehmaze/benjamin/device"
+	"github.com/tehmaze/benjamin/deck"
 )
 
 const (
@@ -49,7 +49,7 @@ func Text(text string) *TextWidget {
 	}
 }
 
-func (w *TextWidget) ImageFor(k device.Key) image.Image {
+func (w *TextWidget) ImageFor(k deck.Key) image.Image {
 	pos := k.Position()
 	if !pos.In(w.Rect) {
 		return nil

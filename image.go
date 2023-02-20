@@ -5,11 +5,11 @@ import (
 
 	"golang.org/x/image/draw"
 
-	"github.com/tehmaze/benjamin/device"
+	"github.com/tehmaze/benjamin/deck"
 )
 
 // ImageForKey resizes an image to match the Key pixels.
-func ImageForKey(i image.Image, k device.Key) *image.RGBA {
+func ImageForKey(i image.Image, k deck.Key) *image.RGBA {
 	if k == nil {
 		return nil
 	}
@@ -25,7 +25,7 @@ func ImageForKey(i image.Image, k device.Key) *image.RGBA {
 }
 
 // ImageForSurface resizes an image to match the Surface pixels.
-func ImageForSurface(i image.Image, s device.Surface) *image.RGBA {
+func ImageForSurface(i image.Image, s deck.Surface) *image.RGBA {
 	if s == nil {
 		return nil
 	}

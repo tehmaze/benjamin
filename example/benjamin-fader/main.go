@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/tehmaze/benjamin"
-	"github.com/tehmaze/benjamin/device"
+	"github.com/tehmaze/benjamin/deck"
 	"github.com/tehmaze/benjamin/effect"
 
-	_ "github.com/tehmaze/benjamin/device/streamdeck" // Stream Deck support
+	_ "github.com/tehmaze/benjamin/deck/streamdeck" // Stream Deck support
 )
 
 func main() {
