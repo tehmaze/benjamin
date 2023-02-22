@@ -12,4 +12,7 @@
 //	Elgato Stream Deck Mini
 //	Elgato Stream Deck MK.2
 //	Elgato Stream Deck XL
+//	Elgato Stream Deck XL V2
+//	Elgato Stream Deck +
+//	Inifinitton iButton
 package benjamin

@@ -1,0 +1,113 @@
+package infinitton
+
+import (
+	"image"
+	"image/draw"
+
+	"github.com/karalabe/hid"
+
+	"github.com/tehmaze/benjamin"
+	"github.com/tehmaze/benjamin/driver"
+)
+
+const (
+	vendorID             = 0xffff
+	iDisplayProductID    = 0x1f40
+	iDisplayProductIDAlt = 0x1f41
+)
+
+func New(info hid.DeviceInfo) benjamin.Device {
+	return NewIDisplay(info)
+}
+
+type iDisplay struct {
+	info   hid.DeviceInfo
+	dev    *hid.Device
+	button [15]*button
+}
+
+func NewIDisplay(info hid.DeviceInfo) *iDisplay {
+	d := &iDisplay{
+		info: info,
+	}
+	for i := range d.button {
+		d.button[i] = newButton(d, i)
+	}
+	return d
+}
+
+func (d *iDisplay) Open() (err error) {
+	d.dev, err = d.info.Open()
+	return
+}
+
+func (d *iDisplay) Close() error {
+	return d.dev.Close()
+}
+
+func (d *iDisplay) Reset() error {
+	return nil // TODO(maze): not implemented
+}
+
+func (d *iDisplay) Manufacturer() string         { return "Infinitton" }
+func (d *iDisplay) Product() string              { return d.info.Product }
+func (d *iDisplay) Serial() string               { return d.info.Serial }
+func (d *iDisplay) Button(int) benjamin.Button   { return nil }
+func (d *iDisplay) Buttons() int                 { return 15 }
+func (d *iDisplay) ButtonLayout() image.Point    { return image.Pt(3, 5) }
+func (d *iDisplay) ButtonSize() image.Point      { return image.Pt(72, 72) }
+func (d *iDisplay) Display(int) benjamin.Display { return nil }
+func (d *iDisplay) Displays() int                { return 0 }
+func (d *iDisplay) DisplaySize() image.Point     { return image.Point{} }
+func (d *iDisplay) Encoder(int) benjamin.Encoder { return nil }
+func (d *iDisplay) Encoders() int                { return 0 }
+
+func (d *iDisplay) ButtonAt(p image.Point) benjamin.Button {
+	if p.X < 0 || p.X >= 3 || p.Y < 0 || p.Y >= 5 {
+		return nil
+	}
+
+	i := p.Y*3 + p.X
+	return d.button[i]
+}
+
+func (d *iDisplay) Events() <-chan benjamin.Event {
+	c := make(chan benjamin.Event)
+
+	go func(c chan<- benjamin.Event) {
+		defer close(c)
+		for {
+
+		}
+	}(c)
+
+	return c
+}
+
+func (d *iDisplay) SetBrightness(v float64) error {
+	if v < 0.0 {
+		v = 0.0
+	} else if v > 1.0 {
+		v = 1.0
+	}
+
+	b := []byte{0x00, 0x11, uint8(v * 100)}
+	_, err := d.dev.SendFeatureReport(b)
+	return err
+}
+
+func (d *iDisplay) Clear() error {
+	i := image.NewNRGBA(image.Rectangle{Max: d.ButtonSize()})
+	draw.Draw(i, i.Rect, image.Black, image.Point{}, draw.Src)
+	for _, k := range d.button {
+		if err := k.SetImage(i); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func init() {
+	driver.RegisterUSB(vendorID, iDisplayProductID, New)
+	driver.RegisterUSB(vendorID, iDisplayProductIDAlt, New)
+}

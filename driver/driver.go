@@ -4,8 +4,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/karalabe/hid"
+
 	"github.com/tehmaze/benjamin"
-	"github.com/tehmaze/benjamin/internal/hid"
 )
 
 // USBDriver returns a device driver for a USB device.

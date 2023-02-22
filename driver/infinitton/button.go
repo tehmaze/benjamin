@@ -1,0 +1,109 @@
+package infinitton
+
+import (
+	"image"
+
+	"github.com/tehmaze/benjamin"
+	"github.com/tehmaze/benjamin/internal/imageutil"
+	"golang.org/x/image/draw"
+)
+
+type button struct {
+	device *iDisplay
+	index  int
+}
+
+func newButton(d *iDisplay, index int) *button {
+	return &button{
+		index:  index,
+		device: d,
+	}
+}
+
+func (k *button) Index() int {
+	return k.index
+}
+
+func (k *button) Position() image.Point {
+	return image.Pt(k.index%3, k.index/3)
+}
+
+func (k *button) Size() image.Point {
+	return k.device.ButtonSize()
+}
+
+func (k *button) Surface() benjamin.Surface {
+	return k.device
+}
+
+func (k *button) SetImage(i image.Image) error {
+	r := image.Rectangle{Max: image.Pt(72, 72)}
+	o := imageutil.NewBGR(r)
+	if i.Bounds().Eq(o.Rect) {
+		draw.Copy(o, image.Point{}, i, i.Bounds(), draw.Src, nil)
+	} else {
+		draw.CatmullRom.Scale(o, o.Rect, i, i.Bounds(), draw.Src, nil)
+	}
+	return k.writePixelData(o.Pix)
+}
+
+var (
+	headerPixelsPage1 = []byte{
+		0x02, 0x00, 0x00, 0x00, 0x00, 0x40, 0x1f, 0x00,
+		0x00, 0x55, 0xaa, 0xaa, 0x55, 0x11, 0x22, 0x33,
+		0x44, 0x42, 0x4d, 0xf6, 0x3c, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x36, 0x00, 0x00, 0x00, 0x28,
+		0x00, 0x00, 0x00, 0x48, 0x00, 0x00, 0x00, 0x48,
+		0x00, 0x00, 0x00, 0x01, 0x00, 0x18, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0xc0, 0x3c, 0x00, 0x00, 0x13,
+		0x0b, 0x00, 0x00, 0x13, 0x0b, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	}
+	headerPixelsPage2 = []byte{
+		0x02, 0x40, 0x1f, 0x00, 0x00, 0xb6, 0x1d, 0x00,
+		0x00, 0x55, 0xaa, 0xaa, 0x55, 0x11, 0x22, 0x33,
+		0x44,
+	}
+)
+
+func (k *button) writePixelData(b []byte) error {
+	var (
+		p1   = b[:7946]
+		p2   = b[7946:]
+		kidx = byte(k.index) + 1
+	)
+	if err := k.writePixelDataPage(headerPixelsPage1, p1); err != nil {
+		return err
+	}
+	if err := k.writePixelDataPage(headerPixelsPage2, p2); err != nil {
+		return err
+	}
+
+	r := []byte{
+		0x00, 0x12, 0x01, 0x00, 0x00, kidx, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0xf6, 0x3c, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00,
+	}
+	if _, err := k.device.dev.SendFeatureReport(r); err != nil {
+		return err
+	}
+	return nil
+}
+
+const pagePacketSize = 8017
+
+func (k *button) writePixelDataPage(h, p []byte) error {
+	b := make([]byte, pagePacketSize)
+
+	// Write header
+	copy(b, h)
+
+	// Write payload
+	copy(b[len(h):], p)
+
+	// Send packet
+	_, err := k.device.dev.Write(p)
+	return err
+}

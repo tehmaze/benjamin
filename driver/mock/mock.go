@@ -15,9 +15,9 @@ var (
 	ErrSetBrightness error
 	Displays         int
 	Encoders         int
-	Keys             int
-	KeyLayout        image.Point
-	KeySize          image.Point
+	Buttons             int
+	ButtonLayout        image.Point
+	ButtonSize          image.Point
 )
 
 // Mock interface
@@ -39,11 +39,11 @@ func (Mock) Display(int) benjamin.Display   { return nil }
 func (Mock) Displays() int                  { return Displays }
 func (Mock) Encoder(int) benjamin.Encoder   { return nil }
 func (Mock) Encoders() int                  { return Encoders }
-func (Mock) Key(int) benjamin.Key           { return nil }
-func (Mock) KeyAt(image.Point) benjamin.Key { return nil }
-func (Mock) KeyLayout() image.Point         { return KeyLayout }
-func (Mock) KeySize() image.Point           { return KeySize }
-func (Mock) Keys() int                      { return Keys }
+func (Mock) Button(int) benjamin.Button           { return nil }
+func (Mock) ButtonAt(image.Point) benjamin.Button { return nil }
+func (Mock) ButtonLayout() image.Point         { return ButtonLayout }
+func (Mock) ButtonSize() image.Point           { return ButtonSize }
+func (Mock) Buttons() int                      { return Buttons }
 func (Mock) SetBrightness(float64) error    { return ErrSetBrightness }
 
 func (Mock) Events() <-chan benjamin.Event {

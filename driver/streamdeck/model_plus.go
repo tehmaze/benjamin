@@ -42,7 +42,7 @@ func plus(device *Device) model {
 func (m *plusModel) Handle(p []byte, c chan<- benjamin.Event) {
 	switch p[1] {
 	case 0x00: // key
-		m.baseModel.handleKey(p[1:], c)
+		m.baseModel.handleButton(p[1:], c)
 	case 0x02: // display
 		m.handleDisplay(p[1:], c)
 	case 0x03: // encoder

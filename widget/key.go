@@ -7,7 +7,7 @@ import (
 	"github.com/tehmaze/benjamin"
 )
 
-func KeyIcon(key benjamin.Key, i image.Image, effects ...Effect) *Image {
+func ButtonIcon(key benjamin.Button, i image.Image, effects ...Effect) *Image {
 	dim := key.Size()
 
 	return &Image{

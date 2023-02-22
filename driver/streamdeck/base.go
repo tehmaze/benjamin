@@ -7,8 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/karalabe/hid"
+
 	"github.com/tehmaze/benjamin"
-	"github.com/tehmaze/benjamin/internal/hid"
 )
 
 // VendorID for Elgate (Corsair) Stream Decks
@@ -61,7 +62,7 @@ func New(info hid.DeviceInfo, prop Properties) *Device {
 		d.encoder[i] = newEncoder(d, i)
 	}
 	for i := range d.key {
-		d.key[i] = newKey(d, i)
+		d.key[i] = newButton(d, i)
 	}
 
 	return d
@@ -103,12 +104,14 @@ func (d *Device) Display(index int) benjamin.Display {
 	return d.display[index]
 }
 
-func (d *Device) Displays() int                    { return d.prop.displays }
-func (d *Device) DisplayLayout() image.Point       { return d.prop.displayLayout }
-func (d *Device) Encoders() int                    { return d.prop.encoders }
-func (d *Device) KeyAt(p image.Point) benjamin.Key { return d.Key(p.Y*d.prop.keyLayout.X + p.X) }
-func (d *Device) Keys() int                        { return d.prop.keys }
-func (d *Device) KeyLayout() image.Point           { return d.prop.keyLayout }
+func (d *Device) Displays() int              { return d.prop.displays }
+func (d *Device) DisplayLayout() image.Point { return d.prop.displayLayout }
+func (d *Device) Encoders() int              { return d.prop.encoders }
+func (d *Device) ButtonAt(p image.Point) benjamin.Button {
+	return d.Button(p.Y*d.prop.keyLayout.X + p.X)
+}
+func (d *Device) Buttons() int              { return d.prop.keys }
+func (d *Device) ButtonLayout() image.Point { return d.prop.keyLayout }
 
 func (d *Device) Encoder(index int) benjamin.Encoder {
 	if index < 0 || index >= d.prop.encoders {
@@ -117,7 +120,7 @@ func (d *Device) Encoder(index int) benjamin.Encoder {
 	return d.encoder[index]
 }
 
-func (d *Device) Key(index int) benjamin.Key {
+func (d *Device) Button(index int) benjamin.Button {
 	//log.Printf("streamdeck: key %d requested", index)
 	if index < 0 || index >= d.prop.keys {
 		return nil
@@ -175,7 +178,7 @@ type model interface {
 	Reset() error
 	SetBrightness(float64) error
 	Handle(p []byte, c chan<- benjamin.Event)
-	SetKeyImage(keyIndex int, imageData []byte) error
+	SetButtonImage(keyIndex int, imageData []byte) error
 	SetDisplayImage(imageData []byte) error
 }
 
@@ -199,11 +202,11 @@ func (m *baseModel) SetBrightness(v float64) error {
 func (m *baseModel) Handle(p []byte, c chan<- benjamin.Event) {
 	switch p[1] {
 	case 0x00: // key
-		m.handleKey(p[1:], c)
+		m.handleButton(p[1:], c)
 	}
 }
 
-func (m *baseModel) handleKey(p []byte, c chan<- benjamin.Event) {
+func (m *baseModel) handleButton(p []byte, c chan<- benjamin.Event) {
 	state := p[m.prop.keyDataOffset:]
 	for i := 0; i < len(state) && i < m.prop.keys; i++ {
 		var (
@@ -215,15 +218,15 @@ func (m *baseModel) handleKey(p []byte, c chan<- benjamin.Event) {
 			key.state = state[i]
 			if press {
 				key.press = time.Now()
-				c <- benjamin.NewKeyPress(m, key)
+				c <- benjamin.NewButtonPress(m, key)
 			} else {
-				c <- benjamin.NewKeyRelease(m, key, time.Since(key.press))
+				c <- benjamin.NewButtonRelease(m, key, time.Since(key.press))
 			}
 		}
 	}
 }
 
-func (m *baseModel) SetKeyImage(index int, imageBytes []byte) error {
+func (m *baseModel) SetButtonImage(index int, imageBytes []byte) error {
 	var (
 		data = imageData{
 			Data:     imageBytes,

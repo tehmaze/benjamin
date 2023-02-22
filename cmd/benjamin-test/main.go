@@ -46,7 +46,7 @@ func main() {
 	}
 
 	r := make(benjamin.Router)
-	widgets := addKeys(d, r)
+	widgets := addButtons(d, r)
 
 	var (
 		render = time.NewTicker(time.Second / time.Duration(*fps))
@@ -81,17 +81,17 @@ func newDeck(serial string) (d benjamin.Device, err error) {
 	return nil, driver.ErrNotFound
 }
 
-func addKeys(d benjamin.Device, r benjamin.Router) (widgets []widget.Widget) {
-	dim := d.KeyLayout()
+func addButtons(d benjamin.Device, r benjamin.Router) (widgets []widget.Widget) {
+	dim := d.ButtonLayout()
 
-	log.Println("test: adding", d.Keys(), "keys")
+	log.Println("test: adding", d.Buttons(), "keys")
 	for y := 0; y < dim.Y; y++ {
 		for x := 0; x < dim.X; x++ {
 			// log.Printf("test: key (%d,%d)", x, y)
-			k := d.KeyAt(image.Pt(x, y))
+			k := d.ButtonAt(image.Pt(x, y))
 			if x == 0 && y == 0 {
-				w := widget.KeyIcon(k, door)
-				r.On(k, benjamin.TypeKeyPress, benjamin.EventHandlerFunc(func(_ benjamin.Event) {
+				w := widget.ButtonIcon(k, door)
+				r.On(k, benjamin.TypeButtonPress, benjamin.EventHandlerFunc(func(_ benjamin.Event) {
 					d.Reset()
 					d.SetBrightness(0.2)
 					d.Close()
@@ -99,11 +99,11 @@ func addKeys(d benjamin.Device, r benjamin.Router) (widgets []widget.Widget) {
 				}))
 				widgets = append(widgets, w)
 			} else {
-				w := widget.KeyIcon(k, relievedFace)
-				r.On(k, benjamin.TypeKeyPress, benjamin.EventHandlerFunc(func(_ benjamin.Event) {
+				w := widget.ButtonIcon(k, relievedFace)
+				r.On(k, benjamin.TypeButtonPress, benjamin.EventHandlerFunc(func(_ benjamin.Event) {
 					w.Set(starStruck)
 				}))
-				r.On(k, benjamin.TypeKeyRelease, benjamin.EventHandlerFunc(func(_ benjamin.Event) {
+				r.On(k, benjamin.TypeButtonRelease, benjamin.EventHandlerFunc(func(_ benjamin.Event) {
 					w.Set(relievedFace)
 				}))
 				widgets = append(widgets, w)

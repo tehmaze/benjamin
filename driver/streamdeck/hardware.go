@@ -12,8 +12,8 @@ var (
 	// DisplayImageInterpolator is the default interpolator for Display images.
 	DisplayImageInterpolator draw.Interpolator = draw.CatmullRom
 
-	// KeyImageInterpolator is the default interpolator for Key images.
-	KeyImageInterpolator draw.Interpolator = draw.BiLinear
+	// ButtonImageInterpolator is the default interpolator for Button images.
+	ButtonImageInterpolator draw.Interpolator = draw.BiLinear
 )
 
 type display struct {
@@ -55,7 +55,7 @@ func (d *display) SetImage(i image.Image) error {
 		copy(d.image.Pix, o.Pix)
 	} else {
 		// Interpolate image into key image.
-		KeyImageInterpolator.Scale(d.image, d.image.Rect, i, i.Bounds(), draw.Src, nil)
+		ButtonImageInterpolator.Scale(d.image, d.image.Rect, i, i.Bounds(), draw.Src, nil)
 	}
 
 	// Copy to general display buffer area.
@@ -107,7 +107,7 @@ type key struct {
 	image  *image.NRGBA
 }
 
-func newKey(device *Device, index int) *key {
+func newButton(device *Device, index int) *key {
 	return &key{
 		device: device,
 		pos:    image.Pt(index%device.prop.keyLayout.X, index/device.prop.keyLayout.X),
@@ -139,7 +139,7 @@ func (k *key) SetImage(i image.Image) error {
 		copy(k.image.Pix, o.Pix)
 	} else {
 		// Interpolate image into key image.
-		KeyImageInterpolator.Scale(k.image, k.image.Rect, i, i.Bounds(), draw.Src, nil)
+		ButtonImageInterpolator.Scale(k.image, k.image.Rect, i, i.Bounds(), draw.Src, nil)
 	}
 
 	// Apply transformations
@@ -159,5 +159,5 @@ func (k *key) SetImage(i image.Image) error {
 	if err != nil {
 		return err
 	}
-	return k.device.SetKeyImage(k.index, b)
+	return k.device.SetButtonImage(k.index, b)
 }

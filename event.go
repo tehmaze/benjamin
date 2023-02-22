@@ -26,27 +26,27 @@ type EventType int
 
 const (
 	TypeError EventType = iota
+	TypeButtonPress
+	TypeButtonRelease
 	TypeDisplayPress
 	TypeDisplayLongPress
 	TypeDisplaySwipe
 	TypeEncoderChange
 	TypeEncoderPress
 	TypeEncoderRelease
-	TypeKeyPress
-	TypeKeyRelease
 	TypeMax
 )
 
 var eventTypeName = map[EventType]string{
 	TypeError:            "Error",
+	TypeButtonPress:      "ButtonPress",
+	TypeButtonRelease:    "ButtonRelease",
 	TypeDisplayPress:     "DisplayPress",
 	TypeDisplayLongPress: "DisplayLongPress",
 	TypeDisplaySwipe:     "DisplaySwipe",
 	TypeEncoderChange:    "EncoderChange",
 	TypeEncoderPress:     "EncoderPress",
 	TypeEncoderRelease:   "EncoderRelease",
-	TypeKeyPress:         "KeyPress",
-	TypeKeyRelease:       "KeyRelease",
 }
 
 func (t EventType) String() string {
@@ -109,6 +109,48 @@ func NewError(device Device, err error) Event {
 
 func (event Error) String() string {
 	return fmt.Sprintf("error:%s", event.Error)
+}
+
+type ButtonPress struct {
+	BaseEvent
+	Button
+}
+
+func NewButtonPress(device Device, key Button) Event {
+	return Event{
+		Type:       TypeButtonPress,
+		Peripheral: key,
+		Data: ButtonPress{
+			BaseEvent: makeBaseEvent(device),
+			Button:    key,
+		},
+	}
+}
+
+func (event ButtonPress) String() string {
+	return fmt.Sprintf("button %s press", event.Button.Position())
+}
+
+type ButtonRelease struct {
+	BaseEvent
+	After time.Duration
+	Button
+}
+
+func NewButtonRelease(device Device, key Button, after time.Duration) Event {
+	return Event{
+		Type:       TypeButtonRelease,
+		Peripheral: key,
+		Data: ButtonRelease{
+			BaseEvent: makeBaseEvent(device),
+			After:     after,
+			Button:    key,
+		},
+	}
+}
+
+func (event ButtonRelease) String() string {
+	return fmt.Sprintf("button %s release: after=%s", event.Button.Position(), event.After)
 }
 
 type DisplayPress struct {
@@ -242,46 +284,4 @@ func NewEncoderRelease(device Device, encoder Encoder, after time.Duration) Even
 
 func (event EncoderRelease) String() string {
 	return fmt.Sprintf("encoder %d release: after=%s", event.Encoder.Index(), event.After)
-}
-
-type KeyPress struct {
-	BaseEvent
-	Key
-}
-
-func NewKeyPress(device Device, key Key) Event {
-	return Event{
-		Type:       TypeKeyPress,
-		Peripheral: key,
-		Data: KeyPress{
-			BaseEvent: makeBaseEvent(device),
-			Key:       key,
-		},
-	}
-}
-
-func (event KeyPress) String() string {
-	return fmt.Sprintf("key %s press", event.Key.Position())
-}
-
-type KeyRelease struct {
-	BaseEvent
-	After time.Duration
-	Key
-}
-
-func NewKeyRelease(device Device, key Key, after time.Duration) Event {
-	return Event{
-		Type:       TypeKeyRelease,
-		Peripheral: key,
-		Data: KeyRelease{
-			BaseEvent: makeBaseEvent(device),
-			After:     after,
-			Key:       key,
-		},
-	}
-}
-
-func (event KeyRelease) String() string {
-	return fmt.Sprintf("key %s release: after=%s", event.Key.Position(), event.After)
 }

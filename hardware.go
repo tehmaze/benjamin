@@ -26,10 +26,10 @@ type Surface interface {
 	Encoder(int) Encoder
 	Encoders() int
 
-	Key(int) Key
-	KeyAt(image.Point) Key
-	Keys() int
-	KeyLayout() image.Point
+	Button(int) Button
+	ButtonAt(image.Point) Button
+	Buttons() int
+	ButtonLayout() image.Point
 
 	SetBrightness(float64) error
 }
@@ -60,7 +60,7 @@ type Encoder interface {
 	Display() Display
 }
 
-type Key interface {
+type Button interface {
 	Peripheral
 	Drawable
 
