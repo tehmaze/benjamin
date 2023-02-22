@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 
-	"github.com/tehmaze/benjamin/deck"
-	_ "github.com/tehmaze/benjamin/deck/all" // All hardware drivers
+	"github.com/tehmaze/benjamin/driver"
+	_ "github.com/tehmaze/benjamin/driver/all" // All hardware drivers
 )
 
 func main() {
-	devices := deck.Discover()
+	devices := driver.Scan()
 	if len(devices) == 0 {
 		fmt.Println("no compatible devices found")
 		return
@@ -19,6 +19,6 @@ func main() {
 		fmt.Println("device", i+1)
 		fmt.Println("  +- manufacturer:", device.Manufacturer())
 		fmt.Println("  +- product:     ", device.Product())
-		fmt.Println("  `- serial:      ", device.SerialNumber())
+		fmt.Println("  `- serial:      ", device.Serial())
 	}
 }
