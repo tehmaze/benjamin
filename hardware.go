@@ -19,9 +19,15 @@ type Device interface {
 	Surface
 }
 
+type USBDevice interface {
+	USBID() (vendorID, productID uint16)
+	Path() string
+}
+
 type Surface interface {
 	Display(int) Display
 	Displays() int
+	DisplayArea() Screen
 
 	Encoder(int) Encoder
 	Encoders() int
@@ -30,6 +36,7 @@ type Surface interface {
 	ButtonAt(image.Point) Button
 	Buttons() int
 	ButtonLayout() image.Point
+	ButtonArea() Screen
 
 	SetBrightness(float64) error
 }
@@ -66,4 +73,9 @@ type Button interface {
 
 	// Position on the key matrix.
 	Position() image.Point
+}
+
+type Screen interface {
+	Peripheral
+	Drawable
 }

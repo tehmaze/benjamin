@@ -11,12 +11,12 @@ import (
 )
 
 var Plus = Properties{
-	Model:               "Stream Deck +",
+	Model:               "Stream Deck Plus",
 	ProductID:           0x0084,
 	model:               plus,
 	displays:            4,
 	displaySize:         image.Point{200, 100},
-	displayLayout:       image.Pt(0, 4),
+	displayLayout:       image.Pt(4, 1),
 	encoders:            4,
 	keys:                8,
 	keyLayout:           image.Point{4, 2},

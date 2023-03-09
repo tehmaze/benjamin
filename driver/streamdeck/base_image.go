@@ -16,8 +16,16 @@ var bmpHeader = []byte{
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 }
 
-func convertBMP(i image.Image) ([]byte, error) {
-	return nil, nil
+func convertBMP(i *image.NRGBA) ([]byte, error) {
+	var b bytes.Buffer
+	b.Write(bmpHeader)
+	for y := i.Rect.Min.Y; y < i.Rect.Max.Y; y++ {
+		for x := i.Rect.Min.X; x < i.Rect.Max.X; x++ {
+			c := i.NRGBAAt(x, y)
+			b.Write([]byte{c.B, c.G, c.R})
+		}
+	}
+	return b.Bytes(), nil
 }
 
 func convertJPEG(i image.Image) ([]byte, error) {

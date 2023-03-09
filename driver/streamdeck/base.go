@@ -65,6 +65,13 @@ func New(info hid.DeviceInfo, prop Properties) *Device {
 		d.key[i] = newButton(d, i)
 	}
 
+	if prop.keys > 0 {
+		d.keyArea = newKeyArea(d)
+	}
+	if prop.displays > 0 {
+		d.displayArea = newDisplayArea(d)
+	}
+
 	return d
 }
 
@@ -72,18 +79,21 @@ type Device struct {
 	model
 	prop         Properties
 	info         hid.DeviceInfo
+	mu           sync.Mutex
 	dev          *hid.Device
-	mu           sync.RWMutex
 	display      []*display
 	displayImage *image.NRGBA
+	displayArea  *displayArea
 	encoder      []*encoder
 	key          []*key
-	event        map[benjamin.EventType][]benjamin.EventHandler
+	keyArea      *keyArea
 }
 
-func (d *Device) Manufacturer() string { return d.info.Manufacturer }
-func (d *Device) Product() string      { return d.info.Product }
-func (d *Device) Serial() string       { return d.info.Serial }
+func (d *Device) USBID() (vid, pid uint16) { return d.info.VendorID, d.info.ProductID }
+func (d *Device) Path() string             { return d.info.Path }
+func (d *Device) Manufacturer() string     { return d.info.Manufacturer }
+func (d *Device) Product() string          { return d.info.Product }
+func (d *Device) Serial() string           { return d.info.Serial }
 
 func (d *Device) Open() error {
 	var err error
@@ -104,14 +114,33 @@ func (d *Device) Display(index int) benjamin.Display {
 	return d.display[index]
 }
 
-func (d *Device) Displays() int              { return d.prop.displays }
-func (d *Device) DisplayLayout() image.Point { return d.prop.displayLayout }
-func (d *Device) Encoders() int              { return d.prop.encoders }
+func (d *Device) Displays() int {
+	return d.prop.displays
+}
+
+func (d *Device) DisplayLayout() image.Point {
+	return d.prop.displayLayout
+}
+
+func (d *Device) DisplayArea() benjamin.Screen {
+	return d.displayArea
+}
+
+func (d *Device) Encoders() int {
+	return d.prop.encoders
+}
+
 func (d *Device) ButtonAt(p image.Point) benjamin.Button {
 	return d.Button(p.Y*d.prop.keyLayout.X + p.X)
 }
-func (d *Device) Buttons() int              { return d.prop.keys }
-func (d *Device) ButtonLayout() image.Point { return d.prop.keyLayout }
+
+func (d *Device) Buttons() int {
+	return d.prop.keys
+}
+
+func (d *Device) ButtonLayout() image.Point {
+	return d.prop.keyLayout
+}
 
 func (d *Device) Encoder(index int) benjamin.Encoder {
 	if index < 0 || index >= d.prop.encoders {
@@ -121,11 +150,14 @@ func (d *Device) Encoder(index int) benjamin.Encoder {
 }
 
 func (d *Device) Button(index int) benjamin.Button {
-	//log.Printf("streamdeck: key %d requested", index)
 	if index < 0 || index >= d.prop.keys {
 		return nil
 	}
 	return d.key[index]
+}
+
+func (d *Device) ButtonArea() benjamin.Screen {
+	return d.keyArea
 }
 
 func (d *Device) Events() <-chan benjamin.Event {
@@ -141,7 +173,6 @@ func (d *Device) Events() <-chan benjamin.Event {
 				c <- benjamin.NewError(d, err)
 				return
 			}
-			//log.Printf("read %d:\n%s", n, hex.Dump(p[:n]))
 			d.Handle(p[:n], c)
 		}
 	}(c)
@@ -168,9 +199,9 @@ func (d *Device) sendFeatureReport(p []byte) error {
 		return io.ErrClosedPipe
 	}
 
-	d.mu.RLock()
+	d.mu.Lock()
 	_, err := d.dev.SendFeatureReport(p)
-	d.mu.RUnlock()
+	d.mu.Unlock()
 	return err
 }
 
@@ -244,7 +275,6 @@ func (m *baseModel) SetButtonImage(index int, imageBytes []byte) error {
 		header = m.imagePageHeader(page, index, len(b), last)
 		copy(buf, header)
 		copy(buf[len(header):], b)
-		//log.Printf("streamdeck: key %d image page %d of %d", index, page, len(buf))
 		if _, err = m.dev.Write(buf); err != nil {
 			return fmt.Errorf("streamdeck: image transfer to key %d failed: %w", index, err)
 		}
@@ -274,7 +304,6 @@ func (m *baseModel) SetDisplayImage(imageBytes []byte) error {
 		header = m.displayPageHeader(page, m.displayImage.Rect, len(b), last)
 		copy(buf, header)
 		copy(buf[len(header):], b)
-		//log.Printf("streamdeck: display image page %d of %d", page, len(buf))
 		if _, err = m.dev.Write(buf); err != nil {
 			return fmt.Errorf("streamdeck: image transfer to display failed: %w", err)
 		}

@@ -143,18 +143,19 @@ func (k *key) SetImage(i image.Image) error {
 	// Fill our key image with the new image.
 	if i == nil {
 		i = blank
-	}
-	if o, ok := i.(*image.RGBA); ok && o.Rect.Eq(k.image.Rect) {
-		// Fast path, copy pixels.
-		copy(k.image.Pix, o.Pix)
-	} else {
-		// Interpolate image into key image.
-		ButtonImageInterpolator.Scale(k.image, k.image.Rect, i, i.Bounds(), draw.Src, nil)
-	}
+	} else if i != k.image {
+		if o, ok := i.(*image.RGBA); ok && o.Rect.Eq(k.image.Rect) {
+			// Fast path, copy pixels.
+			copy(k.image.Pix, o.Pix)
+		} else {
+			// Interpolate image into key image.
+			ButtonImageInterpolator.Scale(k.image, k.image.Rect, i, i.Bounds(), draw.Src, nil)
+		}
 
-	// Apply transformations
-	if k.device.prop.keyImageTransform != nil {
-		k.device.prop.keyImageTransform.Transform(k.image)
+		// Apply transformations
+		if k.device.prop.keyImageTransform != nil {
+			k.device.prop.keyImageTransform.Transform(k.image)
+		}
 	}
 
 	var (
@@ -171,3 +172,123 @@ func (k *key) SetImage(i image.Image) error {
 	}
 	return k.device.SetButtonImage(k.index, b)
 }
+
+// keyArea is a virtual screen that renders to all buttons
+type keyArea struct {
+	device *Device
+	canvas *image.NRGBA
+}
+
+func newKeyArea(device *Device) *keyArea {
+	var (
+		l = device.prop.keyLayout
+		s = device.prop.keySize
+		w = l.X * s.X
+		h = l.Y * s.Y
+	)
+	return &keyArea{
+		device: device,
+		canvas: image.NewNRGBA(image.Rect(0, 0, w, h)),
+	}
+}
+
+func (s *keyArea) Surface() benjamin.Surface {
+	return s.device
+}
+
+func (s *keyArea) Index() int {
+	return -1
+}
+
+func (s *keyArea) Size() image.Point {
+	return s.canvas.Rect.Max
+}
+
+func (s *keyArea) SetImage(i image.Image) error {
+	if i == nil {
+		i = blank
+	}
+
+	if o, ok := i.(*image.NRGBA); ok && o.Rect.Eq(s.canvas.Rect) {
+		copy(s.canvas.Pix, o.Pix)
+	} else {
+		DisplayImageInterpolator.Scale(s.canvas, s.canvas.Rect, i, i.Bounds(), draw.Src, nil)
+	}
+
+	for y := 0; y < s.device.prop.keyLayout.Y; y++ {
+		r := image.Rect(0, y*s.device.prop.keySize.Y, s.device.prop.keySize.X, (y+1)*s.device.prop.keySize.Y)
+		for x := 0; x < s.device.prop.keyLayout.X; x++ {
+			i := y*s.device.prop.keyLayout.X + x
+			k := s.device.key[i]
+			draw.Copy(k.image, image.Point{}, s.canvas, r, draw.Src, nil)
+			if err := k.SetImage(k.image); err != nil {
+				return err
+			}
+			r.Min.X += s.device.prop.keySize.X
+			r.Max.X += s.device.prop.keySize.X
+		}
+	}
+	return nil
+}
+
+// displayArea is a virtual display that renders to all displays
+type displayArea struct {
+	device *Device
+	canvas *image.NRGBA
+}
+
+func newDisplayArea(device *Device) *displayArea {
+	var (
+		l = device.prop.displayLayout
+		s = device.prop.displaySize
+		w = l.X * s.X
+		h = l.Y * s.Y
+	)
+	return &displayArea{
+		device: device,
+		canvas: image.NewNRGBA(image.Rect(0, 0, w, h)),
+	}
+}
+
+func (s *displayArea) Surface() benjamin.Surface {
+	return s.device
+}
+
+func (s *displayArea) Index() int {
+	return -1
+}
+
+func (s *displayArea) Size() image.Point {
+	return s.canvas.Rect.Max
+}
+
+func (s *displayArea) SetImage(i image.Image) error {
+	if s == nil {
+		panic("drawing to nil display area!")
+	}
+
+	if i == nil {
+		i = blank
+	}
+
+	// Fill our key image with the new image.
+	if o, ok := i.(*image.RGBA); ok && o.Rect.Eq(s.canvas.Rect) {
+		// Fast path, copy pixels.
+		copy(s.canvas.Pix, o.Pix)
+	} else {
+		// Interpolate image into key image.
+		DisplayImageInterpolator.Scale(s.canvas, s.canvas.Rect, i, i.Bounds(), draw.Src, nil)
+	}
+
+	b, err := convertJPEG(s.canvas)
+	if err != nil {
+		return err
+	}
+
+	return s.device.SetDisplayImage(b)
+}
+
+var (
+	_ benjamin.Screen = (*keyArea)(nil)
+	_ benjamin.Screen = (*displayArea)(nil)
+)
