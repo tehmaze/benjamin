@@ -16,6 +16,11 @@ var (
 	ButtonImageInterpolator draw.Interpolator = draw.BiLinear
 )
 
+var (
+	// blank image, used for clearing the button/display.
+	blank = image.NewNRGBA(image.Rect(0, 0, 800, 100))
+)
+
 type display struct {
 	device *Device
 	index  int
@@ -47,7 +52,9 @@ func (d *display) Position() image.Point {
 }
 
 func (d *display) SetImage(i image.Image) error {
-	//log.Printf("streamdeck: display %d image %s", d.index, i.Bounds())
+	if i == nil {
+		i = blank
+	}
 
 	// Fill our key image with the new image.
 	if o, ok := i.(*image.RGBA); ok && o.Rect.Eq(d.image.Rect) {
@@ -134,6 +141,9 @@ func (k *key) Size() image.Point {
 
 func (k *key) SetImage(i image.Image) error {
 	// Fill our key image with the new image.
+	if i == nil {
+		i = blank
+	}
 	if o, ok := i.(*image.RGBA); ok && o.Rect.Eq(k.image.Rect) {
 		// Fast path, copy pixels.
 		copy(k.image.Pix, o.Pix)
