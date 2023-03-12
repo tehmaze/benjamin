@@ -17,10 +17,10 @@ func main() {
 
 	fmt.Println(len(devices), "compatible devices found:")
 	for i, device := range devices {
-		if usbDevice, ok := device.(benjamin.USBDevice); ok {
-			vendorID, productID := usbDevice.USBID()
-			fmt.Printf("device %d (usb id %04x:%04x)\n", i+1, vendorID, productID)
-			fmt.Println("  +- path:        ", usbDevice.Path())
+		if usb, ok := device.(benjamin.USBDevice); ok {
+			info := usb.DeviceInfo()
+			fmt.Printf("device %d (usb id %04x:%04x)\n", i+1, info.VendorID, info.ProductID)
+			fmt.Println("  +- path:        ", info.Path)
 		} else {
 			fmt.Println("device", i+1)
 		}

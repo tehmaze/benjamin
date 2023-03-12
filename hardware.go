@@ -1,6 +1,10 @@
 package benjamin
 
-import "image"
+import (
+	"image"
+
+	"github.com/karalabe/hid"
+)
 
 type Device interface {
 	Manufacturer() string
@@ -20,8 +24,7 @@ type Device interface {
 }
 
 type USBDevice interface {
-	USBID() (vendorID, productID uint16)
-	Path() string
+	DeviceInfo() hid.DeviceInfo
 }
 
 type Surface interface {

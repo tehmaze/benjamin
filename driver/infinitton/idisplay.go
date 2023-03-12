@@ -54,7 +54,7 @@ func (d *iDisplay) Reset() error {
 	return nil // TODO(maze): not implemented
 }
 
-func (d *iDisplay) USBID() (vid, pid uint16)     { return d.info.VendorID, d.info.ProductID }
+func (d *iDisplay) DeviceInfo() hid.DeviceInfo   { return d.info }
 func (d *iDisplay) Path() string                 { return d.info.Path }
 func (d *iDisplay) Manufacturer() string         { return "Infinitton" }
 func (d *iDisplay) Product() string              { return d.info.Product }

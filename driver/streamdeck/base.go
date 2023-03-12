@@ -89,11 +89,11 @@ type Device struct {
 	keyArea      *keyArea
 }
 
-func (d *Device) USBID() (vid, pid uint16) { return d.info.VendorID, d.info.ProductID }
-func (d *Device) Path() string             { return d.info.Path }
-func (d *Device) Manufacturer() string     { return d.info.Manufacturer }
-func (d *Device) Product() string          { return d.info.Product }
-func (d *Device) Serial() string           { return d.info.Serial }
+func (d *Device) DeviceInfo() hid.DeviceInfo { return d.info }
+func (d *Device) Path() string               { return d.info.Path }
+func (d *Device) Manufacturer() string       { return d.info.Manufacturer }
+func (d *Device) Product() string            { return d.info.Product }
+func (d *Device) Serial() string             { return d.info.Serial }
 
 func (d *Device) Open() error {
 	var err error
